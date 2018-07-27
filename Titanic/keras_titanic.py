@@ -32,6 +32,11 @@ print(training_data.describe())
 print (testing_data.isnull().sum())
 print(testing_data.describe())
 
+#correlation matrix
+corrmat = training_data.corr()
+f, ax = plt.subplots(figsize=(12, 9))
+sns.heatmap(corrmat, vmax=.8, square=True);
+
 
 sns.countplot(x='Survived',data=training_data,hue='Sex')
 sns.countplot(x='Pclass',data=training_data,hue='Survived')
