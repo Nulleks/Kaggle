@@ -10,7 +10,7 @@ import numpy as np # linear algebra
 import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
 import matplotlib.pyplot as plt
 import seaborn as sns
-import model_tf
+import tensorflow_model as tf_model
 
 sns.set_style('whitegrid')
 
@@ -105,7 +105,7 @@ x_test = sc.transform(x_test)
 
 
 
-_, _, parameters, results = model_tf.model(x_train, y_train, x_test, y_test)
+_, _, parameters, results = tf_model.model(x_train, y_train, x_test, y_test)
 
 
 results = np.where(results > 0.5, 1, 0)
