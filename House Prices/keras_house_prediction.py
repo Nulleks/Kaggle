@@ -21,29 +21,24 @@ test = pd.merge(test, gender_submission_data, on='Id')
 all_data = pd.concat((train,test), sort=False).reset_index(drop=True)
 
 
-print(train.sample(5))
-print(train.isnull().sum())
-
-print(test.isnull().sum())
 
 
 all_data_null = (all_data.isnull().sum() / len(all_data)) * 100
 all_data_null = all_data_null.drop(all_data_null[all_data_null == 0].index).sort_values(ascending=False)
 
-drop = ['Id','Alley', 'FireplaceQu', 'PoolQC', 'Fence', 'MiscFeature']
 
-
+"""
+print(train.sample(5))
+print(train.isnull().sum())
+print(test.isnull().sum())
 sns.countplot(x='SalePrice', data=train, hue='Fence')
-
 sns.lineplot(x='GrLivArea', data=train, y='SalePrice')
 sns.pointplot(x='GrLivArea', data=train, y='SalePrice')
 sns.distplot(train['SalePrice'])
-
-
 corrmat = train.corr()
 plt.subplots(figsize=(12,9))
 sns.heatmap(corrmat, vmax=0.9, square=True)
-
+"""
 
 def preprocess_data(df):
     df.drop('Id', axis=1, inplace=True)
@@ -120,18 +115,19 @@ def preprocess_data(df):
     return df
     
 
-    
-null_data = all_data[all_data.isnull().any(axis=1)]
-
-
-    
-
+ """   
+null_data = all_data[all_data.isnull().any(axis=1)]   
 sns.countplot(x='MSZoning', data= all_data)
 sns.countplot(x='Functional', data= all_data)
 sns.countplot(x='Electrical', data= all_data)
 sns.countplot(x='Exterior1st', data= all_data)
-
 a = train.groupby(["Neighborhood",'Exterior1st']).size()
+a = train.groupby(["LotFrontage"]).size()
+print(train.isnull().sum())
+print(test.isnull().sum())
+train_null = (train.isnull().sum() / len(train)) * 100
+train_null = train_null.drop(train_null[train_null == 0].index).sort_values(ascending=False)
+"""
 
 
 all_data = preprocess_data(all_data)
@@ -139,13 +135,10 @@ all_data = preprocess_data(all_data)
 
 
 
-print(train.isnull().sum())
-print(test.isnull().sum())
-train_null = (train.isnull().sum() / len(train)) * 100
-train_null = train_null.drop(train_null[train_null == 0].index).sort_values(ascending=False)
 
 
-a = train.groupby(["LotFrontage"]).size()
+
+
 
 
 def convert_to_categorical(df):    
@@ -179,6 +172,8 @@ x_test = sc.transform(x_test)
 
 
 
+
+
 # Fitting Random Forest Classification to the Training set
 from sklearn.ensemble import RandomForestClassifier
 classifier = RandomForestClassifier()
@@ -200,42 +195,23 @@ output.to_csv('house_prediction_Forest.csv', index = False)
 
 
 
-----------------------
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-index_price = all_data.columns.get_loc('SalePrice')
-from sklearn.preprocessing import StandardScaler
-sc = StandardScaler()
-all_data2 = sc.fit_transform(all_data)
-
-x_train, x_test = all_data2[:len_train, :], all_data2[len_train:, :]
-
-y_train = x_train[:, index_price]
-y_test = x_test[:, index_price]
-
-x_train = np.delete(x_train, index_price, axis=1)
-x_test = np.delete(x_test, index_price, axis=1)
 
 # Part 2 - Now let's make the ANN!
 # Importing the Keras libraries and packages
 import keras
 from keras.models import Sequential
 from keras.layers import Dense
+from keras import metrics
 
+
+from sklearn.preprocessing import StandardScaler
+scPrice = StandardScaler()
+scPrice.fit(all_data['SalePrice'].values.reshape(-1,1))
+y_train = scPrice.transform(y_train.reshape(-1,1))
+y_test = scPrice.transform(y_test)
 
 def build_classifier():
     # Initialising the ANN
@@ -252,43 +228,27 @@ def build_classifier():
     classifier.add(Dense(units = 1, kernel_initializer = 'uniform'))
     # Compiling the ANN
     #adam = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
-    classifier.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])  # if we have more than two categories, categorical_crossentropy
+    classifier.compile(optimizer = 'adam', loss = 'mean_squared_error', metrics = [metrics.mae])  # if we have more than two categories, categorical_crossentropy
     return classifier
 
 
 
-
-
-
+classifier = build_classifier()
 classifier.fit(x_train, y_train, batch_size = 32, epochs =50, verbose=1, validation_split=0.2) # 0.8058
-# Predicting the Test set results
-import matplotlib as plt
-import matplotlib.pyplot as plt
-# summarize history for accuracy
-plt.plot(history.history['mean_absolute_error'])
-plt.plot(history.history['val_mean_absolute_error'])
-plt.title('model accuracy')
-plt.ylabel('accuracy')
-plt.xlabel('epoch')
-plt.legend(['train', 'test'], loc='upper left')
-plt.show()
-# summarize history for loss
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
-plt.title('model loss')
-plt.ylabel('loss')
-plt.xlabel('epoch')
-plt.legend(['train', 'test'], loc='upper left')
-plt.show()
+
+
+y_pred2 = classifier.predict(x_test)
+y_pred2 = scPrice.inverse_transform(y_pred2)
+y_pred2 = np.squeeze(y_pred2)
+
+output = pd.DataFrame({ 'Id' : ids, 'SalePrice': y_pred2 })
+
+output.to_csv('house_prediction_NN.csv', index = False)
 
 
 
 
 
-y_pred = classifier.predict(x_test)
-
-
-y_pred = sc.inverse_transform(y_pred)
 
 
 
