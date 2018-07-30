@@ -75,8 +75,8 @@ def preprocess_data(df):
     
     df['CategoricalAge'] = pd.cut(df['Age'], 5)
     df['CategoricalFare'] = pd.cut(df['Fare'], 4)
-    #df = pd.get_dummies(df, columns=['CategoricalAge'], drop_first=True)
-    #df = pd.get_dummies(df, columns=['CategoricalFare'], drop_first=True)
+    df = pd.get_dummies(df, columns=['CategoricalAge'], drop_first=True)
+    df = pd.get_dummies(df, columns=['CategoricalFare'], drop_first=True)
     df.drop("Age", axis=1, inplace=True)
     df.drop("Fare", axis=1, inplace=True)
     
@@ -119,7 +119,7 @@ x_test = sc.transform(testing_data)
 
 
 
-
+############################ Random Forest ###################################### 
 # Fitting Random Forest Classification to the Training set
 from sklearn.ensemble import RandomForestClassifier
 classifier = RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gini',
@@ -152,8 +152,7 @@ cm = confusion_matrix(y_test, y_pred)
 
 
 
-
-# Part 2 - Now let's make the ANN!
+############################ Keras NN ###################################### 
 # Importing the Keras libraries and packages
 import keras
 from keras.models import Sequential
@@ -197,6 +196,9 @@ output.to_csv('titanic-predictionsNN.csv', index = False)
 
 
 
+
+
+############################ Keras Grid Search ###################################### 
 def build_classifier_grid(optimizer):
     classifier = Sequential()
     classifier.add(Dense(units = 8, kernel_initializer = 'uniform', activation = 'relu', input_dim = 18))
@@ -220,7 +222,7 @@ best_parameters =  grid_search.best_params_
 best_accuracy = grid_search.best_score_
 
 
-
+############################ Keras K fold ###################################### 
 # K-Fold Cross Validation
 from keras.wrappers.scikit_learn import KerasClassifier
 from sklearn.model_selection import cross_val_score
@@ -230,5 +232,15 @@ mean = accuracies.mean()
 variance = accuracies.std()
 
 
+############################ Xgboost ###################################### 
 
+from xgboost import XGBClassifier
+classifier = XGBClassifier()
+classifier.fit(x_train, y_train)
+y_pred = classifier.predict(x_test)
+# It return probabilities so if y_pred larger than 0.5 it return true if not it return false
+y_pred = np.where(y_pred > 0.5, 1, 0)
+output = pd.DataFrame({ 'PassengerId' : ids, 'Survived': y_pred })
+
+output.to_csv('titanic-xgboost.csv', index = False)
 
