@@ -6,7 +6,7 @@ Created on Fri Jul 20 20:30:59 2018
 """
 
 import numpy as np # linear algebra
-import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)
+import pandas as pd # data processing
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_style('whitegrid')
@@ -115,43 +115,6 @@ x_test = sc.transform(testing_data)
 
 
 
-
-
-
-
-############################ Random Forest ###################################### 
-# Fitting Random Forest Classification to the Training set
-from sklearn.ensemble import RandomForestClassifier
-classifier = RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gini',
-            max_depth=None, max_features='auto', max_leaf_nodes=None,
-            min_impurity_decrease=0.0, min_impurity_split=None,
-            min_samples_leaf=1, min_samples_split=2,
-            min_weight_fraction_leaf=0.0, n_estimators=400, n_jobs=1,
-            oob_score=False, random_state=None, verbose=0,
-            warm_start=False)
-classifier.fit(x_train, y_train.ravel())
-
-classifier = RandomForestClassifier()
-classifier.fit(x_train, y_train.ravel())
-
-classifier.score(x_train,y_train)
-acc_random_forest = round(classifier.score(x_train, y_train) * 100, 2)
-# Predicting the Test set results
-y_pred = classifier.predict(x_test)
-
-ids = ids.reshape(-1,1)
-ids = np.squeeze(ids)
-y_pred = np.squeeze(y_pred)
-output = pd.DataFrame({ 'PassengerId' : ids, 'Survived': y_pred })
-
-output.to_csv('titanic-predictionsForest.csv', index = False)
-
-# Making the Confusion Matrix
-from sklearn.metrics import confusion_matrix
-cm = confusion_matrix(y_test, y_pred)
-
-
-
 ############################ Keras NN ###################################### 
 # Importing the Keras libraries and packages
 import keras
@@ -165,32 +128,34 @@ def build_classifier():
     # Adding the input layer and the first hidden layer
     # Numer or nodes are art, but here we are taking,number of ind variables+ dependent variables --> 11+1 /2
     classifier.add(Dense(units = 10, kernel_initializer = 'uniform', activation = 'relu', input_dim = x_train.shape[1]))
-    # Adding the second hidden layer
-    classifier.add(Dense(units = 10, kernel_initializer = 'uniform', activation = 'relu'))
+    # Adding the second and third hidden layer
+    classifier.add(Dense(units = 32, kernel_initializer = 'uniform', activation = 'relu'))
     # Adding the output layer
     classifier.add(Dense(units = 1, kernel_initializer = 'uniform', activation = 'sigmoid'))
     # Compiling the ANN
+    
     #adam = keras.optimizers.Adam(lr=0.001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
     classifier.compile(optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'])  # if we have more than two categories, categorical_crossentropy
     return classifier
 
-
-
-
+from numpy.random import seed
+seed(1)
 classifier = build_classifier()
-classifier.fit(x_train, y_train, batch_size = 32, epochs =100, verbose=1, validation_split=0.2) # 0.8058
-# Predicting the Test set results
+classifier.fit(x_train, y_train, batch_size = 64, epochs =100, verbose=1, validation_split=0.2) # 0.8058 0.89 val
+
+
+
+# Making the Confusion Matrix
+#from sklearn.metrics import confusion_matrix
+#cm2 = confusion_matrix(y_test, y_pred)
+
+
+# Predicting the Test set results for kaggle
 y_pred = classifier.predict(x_test)
 # It return probabilities so if y_pred larger than 0.5 it return true if not it return false
 y_pred = np.where(y_pred > 0.5, 1, 0)
-# Making the Confusion Matrix
-from sklearn.metrics import confusion_matrix
-cm2 = confusion_matrix(y_test, y_pred)
-
-
 y_pred = np.squeeze(y_pred)
 output = pd.DataFrame({ 'PassengerId' : ids, 'Survived': y_pred })
-
 output.to_csv('titanic-predictionsNN.csv', index = False)
 
 
@@ -243,4 +208,32 @@ y_pred = np.where(y_pred > 0.5, 1, 0)
 output = pd.DataFrame({ 'PassengerId' : ids, 'Survived': y_pred })
 
 output.to_csv('titanic-xgboost.csv', index = False)
+
+
+
+############################ Random Forest ###################################### 
+# Fitting Random Forest Classification to the Training set
+from sklearn.ensemble import RandomForestClassifier
+classifier = RandomForestClassifier()
+classifier.fit(x_train, y_train.ravel())
+
+classifier = RandomForestClassifier()
+classifier.fit(x_train, y_train.ravel())
+
+classifier.score(x_train,y_train)
+acc_random_forest = round(classifier.score(x_train, y_train) * 100, 2)
+# Predicting the Test set results
+y_pred = classifier.predict(x_test)
+
+ids = ids.reshape(-1,1)
+ids = np.squeeze(ids)
+y_pred = np.squeeze(y_pred)
+output = pd.DataFrame({ 'PassengerId' : ids, 'Survived': y_pred })
+
+output.to_csv('titanic-predictionsForest.csv', index = False)
+
+# Making the Confusion Matrix
+from sklearn.metrics import confusion_matrix
+cm = confusion_matrix(y_test, y_pred)
+
 
